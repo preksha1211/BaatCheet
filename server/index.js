@@ -13,7 +13,7 @@ const server = http.createServer(app);
 // ================= SOCKET.IO =================
 const io = new Server(server, {
   cors: {
-    origin: "*", // baad me frontend URL laga sakti ho
+    origin: "*",
     methods: ["GET", "POST"]
   }
 });
@@ -56,7 +56,8 @@ io.on("connection", (socket) => {
 // ================= REACT BUILD SERVE =================
 app.use(express.static(path.join(__dirname, "../client/build")));
 
-app.get("/*", (req, res) => {
+// ✅ Catch-all fix for Render
+app.get('*', function(req, res) {
   res.sendFile(path.join(__dirname, "../client/build/index.html"));
 });
 
