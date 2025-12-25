@@ -4,6 +4,7 @@ import { Box, styled, Typography, Divider } from '@mui/material';
 import { emptyChatImage } from '../../../constants/data';
 
 const Component = styled(Box)`
+    
     background: #f8f9fa;
     padding: 30px 0;
     text-align: center;

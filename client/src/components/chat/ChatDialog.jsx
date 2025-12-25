@@ -16,6 +16,7 @@ const Component=styled(Box)`
 `
 const LeftComponent=styled(Box)`
    min-width:450px;
+   height:100%;
    
 `
 const RightComponent=styled(Box)`

@@ -22,4 +22,3 @@ route.post('/file/upload', upload.single('file'), uploadFile);
 route.get('/file/:filename',getImage);
 
 export default route;
-

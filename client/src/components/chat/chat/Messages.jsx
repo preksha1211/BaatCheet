@@ -1,7 +1,7 @@
-import { useContext, useState ,useEffect, useRef} from 'react';
-import { Box, Container, styled } from '@mui/material';
+import { useState, useEffect, useContext, useRef } from 'react';
+import { Box, styled } from '@mui/material';
 import { AccountContext } from '../../../context/AccountProvider';
-import { getMessages,newMessages } from '../../../service/api';
+import { getMessages, newMessages } from '../../../service/api';
 import Footer from './Footer';
 import Message from './Message';
 
@@ -16,106 +16,91 @@ const Component = styled(Box)`
 `;
 
 const Containe = styled(Box)`
-   padding: 1px 80px;
+  padding: 1px 80px;
 `;
 
 const Messages = ({ person, conversation }) => {
   const [value, setValue] = useState('');
   const [messages, setMessages] = useState([]);
-  
-  const [file,setFile] = useState();
+  const [file, setFile] = useState();
   const [image, setImage] = useState('');
   const [incomingMessage, setIncomingMessage] = useState(null);
 
   const scrollRef = useRef();
+  const { account, socket, newMessageFlag, setMessageFlag } = useContext(AccountContext);
 
-  const { account, socket,newMessageFlag ,setMessageFlag} = useContext(AccountContext);
-    
- useEffect(() =>{
-   socket.current.on('getMessage', data=>{
-        setIncomingMessage({
-           ...data,
-           createAt: Date.now()
-        })
-   })
- },[])
+  // Receive real-time messages
+  useEffect(() => {
+    socket.current.on('getMessage', data => {
+      setIncomingMessage({
+        ...data,
+        createdAt: Date.now()
+      });
+    });
 
- useEffect(() => {
-  const getMessageDetails = async () => {
+    return () => socket.current.off('getMessage');
+  }, []);
 
-    // 🛑 Prevent calling API before conversation exists
-    if (!conversation || !conversation._id) return;
+  // Add incoming message to UI
+  useEffect(() => {
+    if (incomingMessage && conversation?.members?.includes(incomingMessage.senderId)) {
+      setMessages(prev => [...prev, incomingMessage]);
+    }
+  }, [incomingMessage, conversation]);
 
-    let data = await getMessages(conversation._id);
-    setMessages(data);
-  };
+  // Fetch messages
+  useEffect(() => {
+    const getMessageDetails = async () => {
+      if (!conversation || !conversation._id) return;
 
-  getMessageDetails();
-}, [conversation,newMessageFlag]); // 👈 run again when conversation updates
+      const data = await getMessages(conversation._id);
+      setMessages(data);
+    };
 
- useEffect(() => {
-      scrollRef.current?.scrollIntoView({transtition: 'smooth'})
- }, [messages]) 
+    getMessageDetails();
+  }, [conversation, newMessageFlag]);
 
-   useEffect(() => {
-        incomingMessage && conversation?.members?.includes(incomingMessage.senderId) && 
-            setMessages((prev) => [...prev, incomingMessage]);
-        
-    }, [incomingMessage, conversation]);
+  // Scroll to last message
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-
+  // Send message on Enter
   const sendText = async (e) => {
-    const code = e.keyCode || e.which;
-    if (code === 13) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
 
-      
-      if (!conversation || !conversation._id) {
-        console.log("Conversation not created yet ❌");
-        return;
-      }
-      let message = {};
-      if(!file){
-        message = {
-          senderId: account.sub,
-          receiverId: person.sub,
-          conversationId: conversation._id,
-          type: 'text',
-          text: value
-        }
-      } else {
-        message = {
-          senderId: account.sub,
-          receiverId: person.sub,
-          conversationId: conversation._id,
-          type: 'file',
-          text: image
-        };
+      if (!conversation || !conversation._id) return;
 
-      }
+      const message = {
+        senderId: account.sub,
+        receiverId: person.sub,
+        conversationId: conversation._id,
+        type: file ? 'file' : 'text',
+        text: file ? image : value
+      };
 
-      socket.current.emit('sendMessage',message);
-
+      socket.current.emit('sendMessage', message);
       await newMessages(message);
+
       setValue('');
       setFile('');
       setImage('');
-      setMessageFlag(prev =>!prev);
+      setMessageFlag(prev => !prev);
     }
   };
 
   return (
     <Wrapper>
       <Component>
-  {messages && messages.map(message => (
-     <Containe ref={scrollRef}>
-             <Message key={message._id} message={message} />
-     </Containe>
-      
-  ))}
-</Component>
+        {messages.map(message => (
+          <Containe ref={scrollRef} key={message._id}>
+            <Message message={message} />
+          </Containe>
+        ))}
+      </Component>
 
-
-      <Footer 
+      <Footer
         sendText={sendText}
         setValue={setValue}
         value={value}

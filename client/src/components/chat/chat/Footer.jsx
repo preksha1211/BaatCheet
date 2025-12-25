@@ -94,4 +94,3 @@ const Footer = ({ sendText, setValue, value, file, setFile, setImage }) => {
 };
 
 export default Footer;
-
