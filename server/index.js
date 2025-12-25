@@ -2,6 +2,10 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
@@ -16,7 +20,6 @@ const io = new Server(server, {
 
 let users = [];
 
-// Add user
 const addUser = (userData, socketId) => {
   const isExist = users.find(user => user.sub === userData.sub);
   if (!isExist && userData) {
@@ -24,7 +27,6 @@ const addUser = (userData, socketId) => {
   }
 };
 
-// Get user
 const getUser = (userId) => {
   return users.find(user => user.sub === userId);
 };
@@ -52,14 +54,10 @@ io.on("connection", (socket) => {
 });
 
 // ================= REACT BUILD SERVE =================
-const __dirname1 = path.resolve();
+app.use(express.static(path.join(__dirname, "../client/build")));
 
-app.use(express.static(path.join(__dirname1, "client/build")));
-
-app.get("*", (req, res) => {
-  res.sendFile(
-    path.join(__dirname1, "client", "build", "index.html")
-  );
+app.get("/*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../client/build/index.html"));
 });
 
 // ================= SERVER START =================
